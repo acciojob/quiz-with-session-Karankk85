@@ -26,71 +26,69 @@ const questions = [
   },
 ];
 
-// Get DOM elements
 const questionsElement = document.getElementById("questions");
-const submitButton = document.getElementById("submit");
 const scoreElement = document.getElementById("score");
+const submitButton = document.getElementById("submit");
 
-// Retrieve progress from sessionStorage if it exists
-let progress = JSON.parse(sessionStorage.getItem("progress")) || {};
+// Load progress from sessionStorage
+let progress = JSON.parse(sessionStorage.getItem("progress")) || [];
 
-// Function to render questions
 function renderQuestions() {
-  questionsElement.innerHTML = ""; // clear on refresh
+  questionsElement.innerHTML = ""; // Clear before rendering
 
-  questions.forEach((q, i) => {
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
     const questionDiv = document.createElement("div");
 
     const questionText = document.createElement("p");
-    questionText.textContent = q.question;
+    questionText.innerText = q.question;
     questionDiv.appendChild(questionText);
 
-    q.choices.forEach((choice) => {
-      const label = document.createElement("label");
+    for (let j = 0; j < q.choices.length; j++) {
+      const choice = q.choices[j];
       const input = document.createElement("input");
       input.type = "radio";
       input.name = `question-${i}`;
       input.value = choice;
 
-      // Restore saved selection from sessionStorage
+      // Restore saved progress
       if (progress[i] === choice) {
-        input.checked = true;
+        input.setAttribute("checked", "true"); // For Cypress test compatibility
       }
 
-      // On change, update sessionStorage
+      // Save progress when selected
       input.addEventListener("change", () => {
-        progress[i] = input.value;
+        progress[i] = choice;
         sessionStorage.setItem("progress", JSON.stringify(progress));
       });
 
-      label.appendChild(input);
-      label.appendChild(document.createTextNode(choice));
+      const label = document.createTextNode(choice);
+      questionDiv.appendChild(input);
       questionDiv.appendChild(label);
-      questionDiv.appendChild(document.createElement("br"));
-    });
+    }
 
     questionsElement.appendChild(questionDiv);
-  });
-
-  // Restore score from localStorage (if exists)
-  const savedScore = localStorage.getItem("score");
-  if (savedScore !== null) {
-    scoreElement.textContent = `Your score is ${savedScore} out of ${questions.length}.`;
   }
 }
 
-// Handle submit
 submitButton.addEventListener("click", () => {
   let score = 0;
-
-  questions.forEach((q, i) => {
-    if (progress[i] && progress[i] === q.answer) {
+  for (let i = 0; i < questions.length; i++) {
+    if (progress[i] === questions[i].answer) {
       score++;
     }
-  });
+  }
 
-  scoreElement.textContent = `Your score is ${score} out of ${questions.length}.`;
-  localStorage.setItem("score", score);
+  const scoreText = `Your score is ${score} out of 5.`;
+  scoreElement.innerText = scoreText;
+
+  localStorage.setItem("score", score.toString());
 });
 
 renderQuestions();
+
+// Show score if already submitted (page refreshed after submission)
+const savedScore = localStorage.getItem("score");
+if (savedScore !== null) {
+  scoreElement.innerText = `Your score is ${savedScore} out of 5.`;
+}
